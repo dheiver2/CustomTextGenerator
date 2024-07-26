@@ -1,49 +1,44 @@
-# CustomTextGenerator
+# Tutorial: Gerador de Texto Personalizado com GPT-2
 
 ## Introdução
 
-`CustomTextGenerator` é uma classe Python para treinamento e geração de texto usando o modelo GPT-2 da Hugging Face. Ela permite que você treine um modelo GPT-2 em um conjunto de dados personalizado e gere texto com base em entradas fornecidas. O treinamento é feito com o `datasets` e o `transformers` da Hugging Face, e o modelo pode ser ajustado para gerar texto com diferentes comprimentos e estilos.
+Este tutorial explica como usar a classe `CustomTextGenerator` para treinar um modelo de linguagem GPT-2 com um conjunto de dados personalizado e gerar texto com ele. A classe é baseada na biblioteca `transformers` da Hugging Face e usa PyTorch para treinamento e geração de texto.
 
-## Requisitos
+## Pré-requisitos
 
-- Python 3.6 ou superior
+Antes de começar, certifique-se de que você tem as seguintes bibliotecas instaladas:
+
 - `pandas`
 - `torch`
 - `transformers`
 - `sklearn`
 - `datasets`
 
-## Instalação
-
-Você pode instalar as dependências necessárias usando pip. Execute o seguinte comando para instalar as bibliotecas:
+Você pode instalar essas bibliotecas usando o seguinte comando:
 
 ```bash
 pip install pandas torch transformers scikit-learn datasets
 ```
 
-## Uso
+## Código
 
-1. **Preparação dos Dados**
+### Importando Bibliotecas
 
-   Certifique-se de ter um DataFrame do Pandas com uma coluna de texto que deseja usar para treinar o modelo. A coluna deve conter textos que você deseja gerar ou adaptar com o modelo GPT-2.
-
-2. **Criação e Treinamento do Modelo**
-
-   Crie uma instância da classe `CustomTextGenerator` e forneça o DataFrame e o nome da coluna de texto. Em seguida, chame o método `train()` para treinar o modelo.
-
-3. **Geração de Texto**
-
-   Após o treinamento, você pode gerar texto com base em uma entrada fornecida usando o método `generate_text()`.
-
-### Exemplo de Código
-
-Aqui está um exemplo completo de como usar a classe `CustomTextGenerator`:
+Comece importando as bibliotecas necessárias:
 
 ```python
 import pandas as pd
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+import torch
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, Trainer, TrainingArguments
+from sklearn.model_selection import train_test_split
 from datasets import Dataset
+```
 
+### Definindo a Classe `CustomTextGenerator`
+
+Aqui está o código da classe `CustomTextGenerator`:
+
+```python
 class CustomTextGenerator:
     def __init__(self, dataframe: pd.DataFrame, text_column: str, model_name='gpt2', max_length=50, train_size=0.8):
         self.dataframe = dataframe
@@ -91,14 +86,16 @@ class CustomTextGenerator:
         if self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         self.tokenizer.pad_token_id = self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token)
+        # Atualize o modelo com o novo token de padding
+        self.model.resize_token_embeddings(len(self.tokenizer))
     
     def prepare_dataset(self, df: pd.DataFrame) -> Dataset:
         # Prepare os dados para treinamento
         def tokenize_function(examples):
             return self.tokenizer(
                 examples[self.text_column], 
-                padding=False,         # Não use padding
-                truncation=True,       # Truncar se exceder o comprimento máximo
+                padding='max_length',         # Use padding para garantir comprimento fixo
+                truncation=True,              # Truncar se exceder o comprimento máximo
                 max_length=self.max_length
             )
         
@@ -124,10 +121,15 @@ class CustomTextGenerator:
                 eos_token_id=self.tokenizer.eos_token_id
             )
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+```
 
-# Exemplo de uso
-if __name__ == "__main__":
-    # Supondo que você tenha um DataFrame df com a coluna 'translation_text'
+### Exemplo de Uso
+
+Para usar a classe `CustomTextGenerator`, siga estes passos:
+
+1. **Prepare o DataFrame**: Crie um DataFrame com a coluna de texto que deseja usar para treinar o modelo.
+
+    ```python
     df = pd.DataFrame({
         'translation_text': [
             'A tecnologia está evoluindo rapidamente.',
@@ -137,34 +139,29 @@ if __name__ == "__main__":
             'Aprender novas habilidades é sempre benéfico.'
         ]
     })
-    
-    # Crie uma instância da classe CustomTextGenerator
+    ```
+
+2. **Crie uma Instância da Classe**: Inicialize a classe `CustomTextGenerator` com o DataFrame e outras configurações.
+
+    ```python
     text_gen = CustomTextGenerator(dataframe=df, text_column='translation_text', model_name='gpt2', max_length=100)
-    
-    # Treine o modelo
+    ```
+
+3. **Treine o Modelo**: Execute o treinamento do modelo.
+
+    ```python
     text_gen.train()
-    
-    # Gere texto a partir de uma entrada
+    ```
+
+4. **Gere Texto**: Gere texto a partir de uma entrada.
+
+    ```python
     generated_text = text_gen.generate_text("A tecnologia está evoluindo")
     print(generated_text)
-```
+    ```
 
-### Descrição dos Métodos
+### Conclusão
 
-- **`__init__(self, dataframe, text_column, model_name, max_length, train_size)`**: Inicializa a classe com o DataFrame, coluna de texto, nome do modelo, comprimento máximo para geração de texto e tamanho de treinamento.
+Este tutorial fornece uma visão geral de como usar a classe `CustomTextGenerator` para treinar um modelo GPT-2 com um conjunto de dados personalizado e gerar texto. Siga as etapas acima para configurar e executar seu gerador de texto.
 
-- **`_add_padding_token(self)`**: Adiciona um token de padding se necessário. O GPT-2 não requer padding para geração, mas o método garante que o token de padding esteja disponível para outras operações.
-
-- **`prepare_dataset(self, df)`**: Prepara os dados para treinamento, incluindo tokenização e truncamento.
-
-- **`train(self)`**: Treina o modelo usando o método `Trainer` da Hugging Face.
-
-- **`generate_text(self, input_text, max_length)`**: Gera texto com base na entrada fornecida.
-
-## Contribuição
-
-Contribuições são bem-vindas! Se você encontrar algum problema ou tiver sugestões de melhorias, por favor, abra um issue ou um pull request.
-
-## Licença
-
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+Se você encontrar algum problema ou tiver dúvidas, não hesite em buscar ajuda na documentação da [Hugging Face](https://huggingface.co/docs/transformers) ou na comunidade de suporte.
