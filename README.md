@@ -1,7 +1,3 @@
-Claro! Abaixo está um exemplo de um README para o projeto com instruções sobre como usar a classe `CustomTextGenerator`. O README inclui uma introdução, requisitos, instalação, uso e exemplos.
-
----
-
 # CustomTextGenerator
 
 ## Introdução
